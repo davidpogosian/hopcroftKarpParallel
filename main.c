@@ -12,12 +12,12 @@
 
 #define PRINT_INTPUT_OUTPUT 0
 #define RUN_SEQUENTIAL 1
-int USE_MAXIMAL = 1;
+int USE_MAXIMAL = 0;
 
-#define MIN_ROWS 300
-#define MIN_COLS 300
-#define MAX_ROWS 800
-#define MAX_COLS 800
+#define MIN_ROWS 500
+#define MIN_COLS 500
+#define MAX_ROWS 1500
+#define MAX_COLS 1500
 
 int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 			srand(i);
 			rows = MIN_ROWS + rand() % (MAX_ROWS - MIN_ROWS + 1);
 			cols = MIN_COLS + rand() % (MAX_COLS - MIN_COLS + 1);
-			graph = generateGraph(0.3, rows, cols);	
+			graph = generateGraph(0.03, rows, cols);	
 			if (USE_MAXIMAL) {
 				maximal_matching = maximal(graph, rows, cols);
 			}	
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
 		/* start stopwatch */
 		if (world_rank == 0) {
-			start_time_parallel = MPI_Wtime();
+			//start_time_parallel = MPI_Wtime();
 		}
 		MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -67,6 +67,10 @@ int main(int argc, char** argv) {
 			MPI_Bcast(maximal_matching, rows * cols, MPI_INT, 0, MPI_COMM_WORLD);
 		}
 
+		if (world_rank == 0) {
+			start_time_parallel = MPI_Wtime();
+		}
+		
 		max_matching_parallel = hopcroftKarpParallel(graph, rows, cols, world_rank, world_size, maximal_matching);	
 		
 		/* stop stopwatch and display result */
