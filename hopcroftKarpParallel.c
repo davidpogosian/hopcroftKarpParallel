@@ -30,7 +30,7 @@ int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int wo
 		}
 	}
 	
-	for (int z = 0; z < 3; ++z) {
+	while (1) {
 		/* initialize vertices_right_matches using current_matching */
 		int* vertices_right_matches = (int*) malloc(sizeof(int) * cols);
 		for (int j = 0; j < cols; ++j) {
@@ -230,7 +230,7 @@ int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int wo
 		/* exit condition */
 		if (number_of_edges_in_all_paths == 0) {
 			if (world_rank == 0) {
-				printf("COMPLETE \n");
+				// printf("COMPLETE \n");
 			}
 			break;
 		}

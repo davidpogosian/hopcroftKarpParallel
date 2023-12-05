@@ -38,6 +38,13 @@ int IntList_removeByPosition(IntList* int_list, int position) {
     return removed_value;
 }
 
+int IntList_pop(IntList* int_list) {
+    if (!(int_list->tail == 0)) {
+        int_list->tail -= 1;
+        return int_list->arr[int_list->tail];
+    }
+}
+
 void IntList_dealloc(IntList* int_list) {
     free(int_list->arr);
 }

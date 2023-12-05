@@ -10,6 +10,7 @@ typedef struct {
 void IntList_init(IntList* int_list);
 void IntList_appendToEnd(IntList* int_list, int new_element);
 int IntList_removeByPosition(IntList* int_list, int position);
+int IntList_pop(IntList* int_list);
 void IntList_dealloc(IntList* int_list);
 void IntList_print(IntList* int_list, int tag);
 int IntList_isEmpty(IntList* int_list);
