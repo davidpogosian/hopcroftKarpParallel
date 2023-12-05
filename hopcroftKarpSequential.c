@@ -7,12 +7,20 @@
 #define DEBUG_BFS_FOREST 0
 #define DEBUG_DFS 0
 
-int* hopcroftKarpSequential(int* graph, int rows, int cols) {
+int* hopcroftKarpSequential(int* graph, int rows, int cols, int* maximal_matching) {
     /* initialize matching */
 	int* current_matching = (int*) malloc(sizeof(int) * (rows * cols)); /* freed in main.c */
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			current_matching[i*cols + j] = 0;
+	if (maximal_matching == NULL) {
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < cols; ++j) {
+				current_matching[i * cols + j] = 0;
+			}
+		}
+	} else {
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < cols; ++j) {
+				current_matching[i * cols + j] = maximal_matching[i * cols + j];
+			}
 		}
 	}
 	

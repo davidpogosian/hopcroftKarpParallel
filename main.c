@@ -8,14 +8,16 @@
 #include "hopcroftKarpParallel.h"
 #include "hopcroftKarpSequential.h"
 #include "tools.h"
+#include "maximal.h"
 
 #define PRINT_INTPUT_OUTPUT 0
 #define RUN_SEQUENTIAL 1
+int USE_MAXIMAL = 1;
 
-#define MIN_ROWS 100
-#define MIN_COLS 100
-#define MAX_ROWS 200
-#define MAX_COLS 200
+#define MIN_ROWS 300
+#define MIN_COLS 300
+#define MAX_ROWS 800
+#define MAX_COLS 800
 
 int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
@@ -25,18 +27,26 @@ int main(int argc, char** argv) {
 	int* graph;
 	int* max_matching_parallel;
 	int* max_matching_sequential;
+	int* maximal_matching = NULL;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < 100; ++i) {
 		if (world_rank == 0) {
 			srand(i);
 			rows = MIN_ROWS + rand() % (MAX_ROWS - MIN_ROWS + 1);
 			cols = MIN_COLS + rand() % (MAX_COLS - MIN_COLS + 1);
-			graph = generateGraph(0.3, rows, cols);		
+			graph = generateGraph(0.3, rows, cols);	
+			if (USE_MAXIMAL) {
+				maximal_matching = maximal(graph, rows, cols);
+			}	
 			if (PRINT_INTPUT_OUTPUT) {
 				printf("input matrix: \n");
 				printMatrix(graph, rows, cols);
+				if (USE_MAXIMAL) {
+					printf("maximal matching: ");
+					printMatrix(maximal_matching, rows, cols);
+				}
 			}
 		}
 
@@ -48,10 +58,16 @@ int main(int argc, char** argv) {
 		MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		if (world_rank != 0) {
 			graph = (int*) malloc(sizeof(int) * (rows * cols));
+			if (USE_MAXIMAL) {
+				maximal_matching = (int*) malloc(sizeof(int) * (rows * cols));
+			}
 		}
 		MPI_Bcast(graph, rows * cols, MPI_INT, 0, MPI_COMM_WORLD);
+		if (USE_MAXIMAL) {
+			MPI_Bcast(maximal_matching, rows * cols, MPI_INT, 0, MPI_COMM_WORLD);
+		}
 
-		max_matching_parallel = hopcroftKarpParallel(graph, rows, cols, world_rank, world_size);	
+		max_matching_parallel = hopcroftKarpParallel(graph, rows, cols, world_rank, world_size, maximal_matching);	
 		
 		/* stop stopwatch and display result */
 		if (world_rank == 0) {
@@ -64,7 +80,7 @@ int main(int argc, char** argv) {
 			/* run sequential counterpart */
 			if (RUN_SEQUENTIAL) {
 				start_time_sequential = MPI_Wtime();
-				max_matching_sequential = hopcroftKarpSequential(graph, rows, cols);
+				max_matching_sequential = hopcroftKarpSequential(graph, rows, cols, maximal_matching);
 				end_time_sequential = MPI_Wtime();
 			}
 			
@@ -103,10 +119,13 @@ int main(int argc, char** argv) {
 			free(max_matching_sequential);
 		}
 		free(graph);
+		if (USE_MAXIMAL) {
+			free(maximal_matching);
+		}
 		free(max_matching_parallel);
-		
 	}
 
 	MPI_Finalize();
 	return 0;
 }
+

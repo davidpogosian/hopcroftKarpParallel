@@ -21,12 +21,20 @@ int min(int a, int b) {
 	return b;
 }
 
-int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int world_size) {
+int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int world_size, int* maximal_matching) {
 	/* initialize matching */
 	int* current_matching = (int*) malloc(sizeof(int) * (rows * cols)); /* freed in main.c */
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
-			current_matching[i*cols + j] = 0;
+	if (maximal_matching == NULL) {
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < cols; ++j) {
+				current_matching[i * cols + j] = 0;
+			}
+		}
+	} else {
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < cols; ++j) {
+				current_matching[i * cols + j] = maximal_matching[i * cols + j];
+			}
 		}
 	}
 	
@@ -202,16 +210,17 @@ int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int wo
 			index += augmenting_path_lengths.arr[i] * 2;
 		}
 
-		/* share number_global_min_length_paths with other procs */ // ALL TO ALL INSTEAD
+		/* share number_global_min_length_paths with other procs */
 		int* number_paths_per_process = (int*) malloc(sizeof(int) * world_size);
-		number_paths_per_process[world_rank] = number_global_min_length_paths;
-		for (int i = 0; i < world_size; ++i) {
-			if (i == world_rank) {
-				MPI_Bcast(&number_global_min_length_paths, 1, MPI_INT, world_rank, MPI_COMM_WORLD);
-			} else {
-				MPI_Bcast(&number_paths_per_process[i], 1, MPI_INT, i, MPI_COMM_WORLD);
-			}
-		}
+		// number_paths_per_process[world_rank] = number_global_min_length_paths;
+		// for (int i = 0; i < world_size; ++i) {
+		// 	if (i == world_rank) {
+		// 		MPI_Bcast(&number_global_min_length_paths, 1, MPI_INT, world_rank, MPI_COMM_WORLD);
+		// 	} else {
+		// 		MPI_Bcast(&number_paths_per_process[i], 1, MPI_INT, i, MPI_COMM_WORLD);
+		// 	}
+		// }
+		MPI_Allgather(&number_global_min_length_paths, 1, MPI_INT, number_paths_per_process, 1, MPI_INT, MPI_COMM_WORLD);
 
 		if (DEBUG_NUMBER_OF_PATHS_DISTRIBUTION) {
 			if (world_rank == 0) {
@@ -249,8 +258,9 @@ int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int wo
 		IntList_shrinkToFit(&outgoing_paths);
 
 		/* gather all paths */
-		MPI_Gatherv(outgoing_paths.arr, global_min_length * number_global_min_length_paths * 2, MPI_INT, incoming_paths, number_paths_per_process, displacements , MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Allgatherv(outgoing_paths.arr, global_min_length * number_global_min_length_paths * 2, MPI_INT, incoming_paths, number_paths_per_process, displacements , MPI_INT, MPI_COMM_WORLD);
 	//									global_min_legnth * 		   					   * 2 added this to make it work
+
 		if (DEBUG_GATHERV) {
 			if (world_rank == 0) {
 				printf("displacements: \n");
@@ -267,7 +277,7 @@ int* hopcroftKarpParallel(int* graph, int rows, int cols, int world_rank, int wo
 		}
 
 		/* bcast all paths 0 -> everyone */
-		MPI_Bcast(incoming_paths, number_of_edges_in_all_paths, MPI_INT, 0, MPI_COMM_WORLD);
+		//MPI_Bcast(incoming_paths, number_of_edges_in_all_paths, MPI_INT, 0, MPI_COMM_WORLD);
 
 		if (DEBUG_AUGMENTING_PATHS_GLOBAL) {
 			if (world_rank == 1) {
