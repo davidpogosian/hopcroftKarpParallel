@@ -11,6 +11,13 @@ set title 'Sequential vs Parallel as p increases'
 set xlabel 'p'
 set ylabel 'time (s)'
 
-# Plot the data from the file using lines
-plot 'graph_data.txt' using 1:2 with points title 'Seq', \
-     '' using 1:3 with points title 'Par'
+# Set the style of the bars
+set style data histograms
+set style histogram cluster gap 1
+
+# Set the position of the legend to the top left
+set key left top
+
+# Plot the data from the file using bars
+plot 'graph_data.txt' using 1:2:xtic(1) with boxes title 'Seq', \
+     '' using 1:3 with boxes title 'Par'
